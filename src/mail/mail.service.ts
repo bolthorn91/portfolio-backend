@@ -12,7 +12,7 @@ export class MailService {
   async sendUserConfirmation(from?: string): Promise<boolean> {
     try {
       const response = await this.mailerService.sendMail({
-        from: from || `"No Reply" <${this.configService.get('MAIL_TO')}>`,
+        from: from ? `<${from}>` : `<${this.configService.get('MAIL_TO')}>`,
         subject: 'Contact from web',
         template: './confirmation',
         context: {
