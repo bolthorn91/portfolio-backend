@@ -1,6 +1,7 @@
 import { Body, Controller, Get, Post } from '@nestjs/common';
 import { AppService } from './app.service';
 import { MailService } from '../mail/mail.service';
+import { ISendMailInputDTO } from 'src/types/dtos';
 
 @Controller()
 export class AppController {
@@ -14,8 +15,10 @@ export class AppController {
     return this.appService.getHello();
   }
 
-  @Post()
-  sendMail(@Body() dto: {from: string}): void {
-    this.mailService.sendUserConfirmation(dto.from);
+  @Post('/contact')
+  sendContactMail(
+    @Body() mailDto: ISendMailInputDTO
+  ): void {
+    this.mailService.sendContactMail(mailDto)
   }
 }
