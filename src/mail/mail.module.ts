@@ -12,12 +12,12 @@ import { join } from 'path';
       useFactory: async (config: ConfigService) => {
         return ({
           transport: {
-            host: config.get('MAIL_HOST'),
-            port: parseInt(config.get('MAIL_PORT')),
+            host: config.get('MAIL_SENDGRID_HOST'),
+            port: parseInt(config.get('MAIL_NOSSL_PORT2')),
             secure: false,
             auth: {
-              user: config.get('MAIL_USER'),
-              pass: config.get('MAIL_KEY'),
+              user: config.get('MAIL_SENDGRID_USER'),
+              pass: config.get('MAIL_SENDGRID_API_KEY'),
             },
           },
           defaults: {

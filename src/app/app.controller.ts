@@ -1,7 +1,8 @@
-import { Body, Controller, Get, Post } from '@nestjs/common';
+import { Body, Controller, Get, HttpStatus, Post, Res, } from '@nestjs/common';
 import { AppService } from './app.service';
 import { MailService } from '../mail/mail.service';
 import { ISendMailInputDTO } from 'src/types/dtos';
+import { Response } from 'express';
 
 @Controller()
 export class AppController {
@@ -17,8 +18,10 @@ export class AppController {
 
   @Post('/contact')
   sendContactMail(
-    @Body() mailDto: ISendMailInputDTO
+    @Body() mailDto: ISendMailInputDTO,
+    @Res() res: Response
   ): void {
     this.mailService.sendContactMail(mailDto)
+    res.status(HttpStatus.CREATED).send('email sent correctly');
   }
 }
