@@ -1,9 +1,12 @@
 import { Injectable } from '@nestjs/common';
-import { getCVPdf } from 'src/services/pdf.service';
+import { PdfService } from 'src/services/pdf.service';
 
 @Injectable()
 export class CVService {
-  async createPdf() {
-    return getCVPdf('juan')
+  constructor(
+    private pdfService: PdfService
+  ){}
+  async createPdf(member: string) {
+    return this.pdfService.getCVPdf(member)
   }
 }
