@@ -59,7 +59,6 @@ export class MailService {
       const sendgridService = new SendgridService();
       sendgridService.setApiKey(this.configService.get('MAIL_SENDGRID_API_KEY'));
       const response = await sendgridService.send(email as any);
-      console.log('%j', {response: (response as any).body})
       if (response) {
         return true
       };
