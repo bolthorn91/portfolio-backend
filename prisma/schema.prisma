@@ -1,0 +1,265 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  CLIENT
+  ADMIN
+}
+
+enum PriceType {
+  FIXED
+  RANGE
+  STARTING_FROM
+  HOURLY
+}
+
+enum AddonPriceType {
+  FIXED
+  PERCENTAGE
+}
+
+enum FieldType {
+  TEXT
+  TEXTAREA
+  NUMBER
+  SELECT
+  MULTISELECT
+  BOOLEAN
+  EMAIL
+}
+
+enum QuoteStatus {
+  PENDING
+  CONSULTING_REQUIRED
+  CONSULTING_PAID
+  QUOTED
+  APPROVED
+  DEPOSIT_PAID
+  PAID
+  IN_PROGRESS
+  COMPLETED
+  REJECTED
+  CANCELLED
+}
+
+enum ConsultingStatus {
+  PENDING
+  PAID
+  IN_PROGRESS
+  COMPLETED
+}
+
+enum PaymentType {
+  CONSULTING
+  DEPOSIT
+  FULL
+  INSTALLMENT
+}
+
+enum PaymentStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+model Tenant {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users User[]
+}
+
+model User {
+  id             String   @id @default(cuid())
+  email          String   @unique
+  name           String?
+  authProviderId String?
+  role           Role     @default(CLIENT)
+  tenantId       String
+  tenant         Tenant   @relation(fields: [tenantId], references: [id])
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  quotes Quote[]
+}
+
+model ServiceCategory {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  description String
+  icon        String
+  order       Int      @default(0)
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  subcategories ServiceSubcategory[]
+}
+
+model ServiceSubcategory {
+  id                  String   @id @default(cuid())
+  name                String
+  slug                String
+  description         String
+  longDescription     String?
+  priceType           PriceType
+  basePrice           Float?
+  minPrice            Float?
+  maxPrice            Float?
+  estimatedDays       Int?
+  features            String[]
+  requiresConsulting  Boolean  @default(false)
+  consultingHoursMin  Int?
+  consultingHoursMax  Int?
+  consultingPrice     Float?
+  consultingCriteria  String?
+  active              Boolean  @default(true)
+  categoryId          String
+  category            ServiceCategory @relation(fields: [categoryId], references: [id])
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  addons      ServiceAddon[]
+  formFields  FormField[]
+  quoteItems  QuoteItem[]
+}
+
+model ServiceAddon {
+  id             String         @id @default(cuid())
+  name           String
+  description    String?
+  price          Float
+  priceType      AddonPriceType @default(FIXED)
+  subcategoryId  String
+  subcategory    ServiceSubcategory @relation(fields: [subcategoryId], references: [id])
+  active         Boolean        @default(true)
+  createdAt      DateTime       @default(now())
+
+  quoteAddons QuoteAddon[]
+}
+
+model FormField {
+  id             String    @id @default(cuid())
+  label          String
+  fieldType      FieldType
+  required       Boolean   @default(false)
+  placeholder    String?
+  helpText       String?
+  order          Int       @default(0)
+  options        String?
+  subcategoryId  String
+  subcategory    ServiceSubcategory @relation(fields: [subcategoryId], references: [id])
+
+  fieldValues FormFieldValue[]
+}
+
+model Quote {
+  id              String      @id @default(cuid())
+  reference       String      @unique
+  status          QuoteStatus @default(PENDING)
+  contactName     String
+  contactEmail    String
+  contactPhone    String?
+  company         String?
+  notes           String?
+  totalEstimate   Float
+  depositAmount   Float?
+  paidAmount      Float       @default(0)
+  currency        String      @default("EUR")
+  token           String      @unique
+  consultantNotes String?
+  userId          String?
+  user            User?       @relation(fields: [userId], references: [id])
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  items       QuoteItem[]
+  addons      QuoteAddon[]
+  fieldValues FormFieldValue[]
+  consulting  PreConsulting?
+  payments    Payment[]
+}
+
+model QuoteItem {
+  id             String   @id @default(cuid())
+  subcategoryId  String
+  subcategory    ServiceSubcategory @relation(fields: [subcategoryId], references: [id])
+  quantity       Int      @default(1)
+  unitPrice      Float
+  totalPrice     Float
+  quoteId        String
+  quote          Quote    @relation(fields: [quoteId], references: [id])
+
+  addons QuoteAddon[]
+}
+
+model QuoteAddon {
+  id          String        @id @default(cuid())
+  addonId     String
+  addon       ServiceAddon  @relation(fields: [addonId], references: [id])
+  quoteItemId String?
+  quoteItem   QuoteItem?    @relation(fields: [quoteItemId], references: [id])
+  quoteId     String
+  quote       Quote         @relation(fields: [quoteId], references: [id])
+  price       Float
+}
+
+model FormFieldValue {
+  id      String    @id @default(cuid())
+  value   String
+  fieldId String
+  field   FormField @relation(fields: [fieldId], references: [id])
+  quoteId String
+  quote   Quote     @relation(fields: [quoteId], references: [id])
+}
+
+model PreConsulting {
+  id          String           @id @default(cuid())
+  quoteId     String           @unique
+  quote       Quote            @relation(fields: [quoteId], references: [id])
+  hours       Int
+  totalPrice  Float
+  status      ConsultingStatus @default(PENDING)
+  adminNotes  String?
+  reportUrl   String?
+  completedAt DateTime?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+}
+
+model Payment {
+  id             String        @id @default(cuid())
+  reference      String        @unique
+  amount         Float
+  currency       String        @default("EUR")
+  type           PaymentType
+  provider       String
+  providerId     String?
+  status         PaymentStatus @default(PENDING)
+  quoteId        String
+  quote          Quote         @relation(fields: [quoteId], references: [id])
+  metadata       String?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+}
+
+model QuoteStatusLog {
+  id        String      @id @default(cuid())
+  quoteId   String
+  status    QuoteStatus
+  timestamp DateTime    @default(now())
+
+  @@index([quoteId])
+}
